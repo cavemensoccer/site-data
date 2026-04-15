@@ -32,18 +32,18 @@ header {
 }
 
 .main-logo {
-    height: 60px;
+    height: 90px;
     width: auto;
 }
 
 .main-title {
-    font-family: 'Oswald', sans-serif;
-    font-weight: 700;
+    font-family: 'Anton', sans-serif;
+    font-weight: 400;
     text-transform: uppercase;
-    font-size: 2.8rem;
+    font-size: 3.8rem;
     letter-spacing: 1px;
     margin: 0;
-    display: flex; 
+    display: flex;
     align-items: center;
     color: #fff;
     text-decoration: none;
@@ -132,7 +132,7 @@ header {
 }
 
 @media (max-width: 768px) {
-    .main-title { font-size: 1.8rem; }
+    .main-title { font-size: 2.2rem; }
 }
 
 /* Side Menu */
