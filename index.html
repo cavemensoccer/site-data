@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roster Component | AF Soccer</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            /* Define these variables here since we removed the main style.css dependency */
+            --af-red: #cc0000;
+            --af-dark-gray: #1a1a1a;
+        }
+
+        body {
+            background: transparent !important; /* Blends with Canva */
+            margin: 0;
+            padding: 0;
+            color: #fff;
+            font-family: Arial, sans-serif;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 10px;
+        }
+
+        #roster-output {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 30px;
+        }
+
+        .player-card {
+            background: var(--af-dark-gray);
+            border-radius: 4px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            transition: transform 0.2s ease;
+            text-align: center;
+            padding-bottom: 20px;
+        }
+
+        .player-image {
+            width: 100%;
+            height: 320px;
+            object-fit: cover;
+            object-position: top;
+            background: #222;
+            margin-bottom: 15px;
+            border-bottom: 4px solid var(--af-red);
+        }
+
+        .player-name-row { 
+            font-family: 'Oswald', sans-serif; 
+            font-size: 1.6rem; 
+            text-transform: uppercase; 
+            margin: 10px 0 5px 0; 
+        }
+
+        .player-number { color: var(--af-red); margin-right: 5px; }
+
+        .player-detail { 
+            font-size: 0.9rem; 
+            color: #aaa; 
+            margin: 4px 0; 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px; 
+        }
+
+        .player-detail span { color: #fff; font-weight: bold; }
+
+        .loader { text-align: center; padding: 50px; font-size: 1.2rem; font-family: 'Oswald', sans-serif; }
+
+        @media (max-width: 768px) {
+            #roster-output { grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-width: 480px) {
+            #roster-output { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 id="page-title" style="font-family: 'Oswald', sans-serif; text-transform: uppercase;">Roster</h2>
+            <div class="year-select-container">
+                <label for="year-select" style="font-size: 0.8rem; text-transform: uppercase; margin-right: 5px;">Year</label>
+                <select id="year-select" onchange="handleYearChange()" style="background: #333; color: #fff; border: 1px solid #555; padding: 5px;"></select>
+            </div>
+        </div>
+
+        <div id="roster-output">
+            <div class="loader">Loading...</div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script>
+        // Use the parsing logic and logic from your previous build
+        const parseCSVLine = (line) => {
+            const result = [];
+            let current = "";
+            let inQuotes = false;
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                if (char === '"' && line[i+1] === '"') { current += '"'; i++; }
+                else if (char === '"') { inQuotes = !inQuotes; }
+                else if (char === ',' && !inQuotes) { result.push(current.trim()); current = ""; }
+                else { current += char; }
+            }
+            result.push(current.trim());
+            return result;
+        };
+
+        const getRandomSlogan = () => {
+            const slogans = typeof SOCCER_CONFIG !== 'undefined' ? SOCCER_CONFIG.SLOGANS : ["Loading Players..."];
+            return slogans[Math.floor(Math.random() * slogans.length)];
+        };
+
+        // ... Rest of your logic (loadMeta, updateYearDropdown, fetchRoster) goes here ...
+        // (I kept the logic below exactly as you had it for compatibility)
+        const BASES = typeof SOCCER_CONFIG !== 'undefined' ? SOCCER_CONFIG.ROSTER_BASES : {};
+        const META_GIDS = typeof SOCCER_CONFIG !== 'undefined' ? SOCCER_CONFIG.ROSTER_META_GIDS : {};
+        
+        let currentTeam = 'all';
+        let currentYear = '';
+        let metaData = { 'all': null };
+
+        async function loadMeta(teamId) {
+            try {
+                const response = await fetch(`${BASES[teamId]}&gid=${META_GIDS[teamId]}`);
+                const csvText = await response.text();
+                const rows = csvText.split('\n').filter(r => r.trim().length > 0);
+                const mapping = {};
+                rows.forEach(row => {
+                    const cols = parseCSVLine(row);
+                    if (cols.length >= 3 && cols[2].toUpperCase() === 'TRUE') {
+                        const yearMatch = cols[0].match(/20\d{2}/);
+                        if (yearMatch) mapping[yearMatch[0]] = cols[1];
+                    }
+                });
+                metaData[teamId] = mapping;
+            } catch (e) { console.error("Meta Load Error:", e); }
+        }
+
+        function updateYearDropdown() {
+            const select = document.getElementById('year-select');
+            if(!metaData[currentTeam]) return;
+            const years = Object.keys(metaData[currentTeam]).sort().reverse();
+            select.innerHTML = '';
+            years.forEach(yr => {
+                const opt = document.createElement('option');
+                opt.value = yr; opt.textContent = yr;
+                select.appendChild(opt);
+            });
+            if (!currentYear || !years.includes(currentYear)) currentYear = years[0] || '';
+            select.value = currentYear;
+        }
+
+        async function fetchRoster() {
+            const output = document.getElementById('roster-output');
+            const title = document.getElementById('page-title');
+            if (!currentYear) {
+                output.innerHTML = "<p>No roster data found.</p>";
+                return;
+            }
+            title.textContent = `${currentYear} Roster`;
+            output.innerHTML = `<div class="loader">${getRandomSlogan()}</div>`;
+            
+            try {
+                const gid = metaData[currentTeam][currentYear];
+                const response = await fetch(`${BASES[currentTeam]}&gid=${gid}`);
+                const csvText = await response.text();
+                const rows = csvText.split('\n').filter(r => r.trim().length > 0).slice(1);
+
+                const players = rows.map(line => {
+                    const cols = parseCSVLine(line);
+                    return { number: cols[0], name: cols[1], pClass: cols[2], position: cols[3], club: cols[4], photoId: cols[5] };
+                }).filter(p => p.name).sort((a, b) => parseInt(a.number || 999) - parseInt(b.number || 999));
+
+                let html = "";
+                players.forEach(p => {
+                    const imgSrc = p.photoId ? `https://lh3.googleusercontent.com/d/${p.photoId}=s1000` : "";
+                    html += `
+                        <div class="player-card">
+                            <img src="${imgSrc}" alt="${p.name}" class="player-image" onerror="this.src='https://via.placeholder.com/320x320?text=No+Photo'">
+                            <div class="player-name-row">
+                                ${p.number ? `<span class="player-number">#${p.number}</span> ` : ''}${p.name}
+                            </div>
+                            <div class="player-detail">Class: <span>${p.pClass}</span></div>
+                            <div class="player-detail">Position: <span>${p.position}</span></div>
+                            <div class="player-detail">Club: <span>${p.club}</span></div>
+                        </div>`;
+                });
+                output.innerHTML = html || "<p>No players found.</p>";
+            } catch (error) {
+                output.innerHTML = `<div style="text-align:center; padding: 20px;">⚠️ Could not load data.</div>`;
+            }
+        }
+
+        function handleYearChange() {
+            currentYear = document.getElementById('year-select').value;
+            fetchRoster();
+        }
+
+        (async () => {
+            await loadMeta('all');
+            updateYearDropdown();
+            fetchRoster();
+        })();
+    </script>
+</body>
+</html>
