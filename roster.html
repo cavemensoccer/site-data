@@ -84,6 +84,17 @@
         </div>
 
         <div class="controls-row">
+            <div class="year-select-container">
+                <label for="filter-select">Filter</label>
+                <select id="filter-select" onchange="handleFilterChange()">
+                    <option value="all">All</option>
+                    <option value="seniors">Seniors</option>
+                    <option value="juniors">Juniors</option>
+                    <option value="sophomores">Sophomores</option>
+                    <option value="freshman">Freshman</option>
+                    <option value="staff">Staff</option>
+                </select>
+            </div>
             <div class="year-select-container" style="margin-left: auto;">
                 <label for="year-select">Year</label>
                 <select id="year-select" onchange="handleYearChange()"></select>
@@ -112,6 +123,8 @@
 
         let currentTeam = 'all';
         let currentYear = '';
+        let currentFilter = 'all';
+        let allPlayers = [];
         let metaData = { 'all': null };
 
         const parseCSVLine = (line) => {
@@ -161,6 +174,54 @@
             select.value = currentYear;
         }
 
+        function matchesFilter(player, filter) {
+            const c = (player.pClass || '').toLowerCase();
+            switch (filter) {
+                case 'seniors':    return /^sr\.?$|senior/.test(c);
+                case 'juniors':    return /^jr\.?$|junior/.test(c);
+                case 'sophomores': return /^so\.?$|soph|sophomore/.test(c);
+                case 'freshman':   return /^fr\.?$|fresh|freshman/.test(c);
+                case 'staff':      return c.includes('coach');
+                default:           return true;
+            }
+        }
+
+        function renderPlayers(players) {
+            const output = document.getElementById('roster-output');
+            const filtered = players.filter(p => matchesFilter(p, currentFilter));
+            if (!filtered.length) {
+                output.innerHTML = "<p>No players found.</p>";
+                return;
+            }
+            let html = "";
+            filtered.forEach(p => {
+                // Append =s1000 to the ID to tell Google to serve a web-optimized
+                // version resized to 1000px on the longest side.
+                const imgSrc = p.photoId
+                    ? `https://lh3.googleusercontent.com/d/${p.photoId}=s1000`
+                    : "";
+
+                const isStaff = (p.pClass || '').toLowerCase().includes('coach');
+                const details = [
+                    isStaff     ? `<div class="player-detail"><span>${p.pClass}</span></div>` : '',
+                    p.pClass && !isStaff ? `<div class="player-detail">Class: <span>${p.pClass}</span></div>` : '',
+                    p.position  ? `<div class="player-detail">Position: <span>${p.position}</span></div>` : '',
+                    p.club      ? `<div class="player-detail">Club: <span>${p.club}</span></div>` : '',
+                ].join('');
+
+                html += `
+                    <div class="player-card">
+                        <img src="${imgSrc}" alt="${p.name}" class="player-image" onerror="this.style.opacity='0'">
+                        <div class="player-name-row">
+                            ${p.number ? `<span class="player-number">#${p.number}</span> ` : ''}${p.name}
+                        </div>
+                        ${details}
+                    </div>
+                `;
+            });
+            output.innerHTML = html;
+        }
+
         async function fetchRoster() {
             const output = document.getElementById('roster-output');
             const title = document.getElementById('page-title');
@@ -177,8 +238,8 @@
                 const csvText = await response.text();
                 const rows = csvText.split('\n').filter(r => r.trim().length > 0).slice(1); // Skip header
 
-                // Map rows to objects and sort by number
-                const players = rows.map(line => {
+                // Map rows to objects and sort by jersey number (staff with no number sorts last)
+                allPlayers = rows.map(line => {
                     const cols = parseCSVLine(line);
                     return {
                         number: cols[0],
@@ -186,7 +247,7 @@
                         pClass: cols[2],
                         position: cols[3],
                         club: cols[4],
-                        photoId: cols[5] // New column populated by Apps Script
+                        photoId: cols[5]
                     };
                 })
                 .filter(p => p.name)
@@ -196,27 +257,7 @@
                     return (isNaN(aNum) ? Infinity : aNum) - (isNaN(bNum) ? Infinity : bNum);
                 });
 
-                let html = "";
-                players.forEach(p => {
-                    // Append =s1000 to the ID to tell Google to serve a web-optimized
-                    // version resized to 1000px on the longest side.
-                    const imgSrc = p.photoId
-                        ? `https://lh3.googleusercontent.com/d/${p.photoId}=s1000`
-                        : "";
-
-                    html += `
-                        <div class="player-card">
-                            <img src="${imgSrc}" alt="${p.name}" class="player-image" onerror="this.style.opacity='0'">
-                            <div class="player-name-row">
-                                ${p.number ? `<span class="player-number">#${p.number}</span> ` : ''}${p.name}
-                            </div>
-                            <div class="player-detail">Class: <span>${p.pClass}</span></div>
-                            <div class="player-detail">Position: <span>${p.position}</span></div>
-                            <div class="player-detail">Club: <span>${p.club}</span></div>
-                        </div>
-                    `;
-                });
-                output.innerHTML = html || "<p>No players found.</p>";
+                renderPlayers(allPlayers);
             } catch (error) {
                 output.innerHTML = `<div style="text-align:center; padding: 40px; background: #111; border-radius: 4px;">⚠️ Could not load the roster. Please refresh the page to try again.</div>`;
             }
@@ -225,6 +266,11 @@
         function handleYearChange() {
             currentYear = document.getElementById('year-select').value;
             fetchRoster();
+        }
+
+        function handleFilterChange() {
+            currentFilter = document.getElementById('filter-select').value;
+            renderPlayers(allPlayers);
         }
 
         (async () => {
