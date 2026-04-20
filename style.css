@@ -131,6 +131,10 @@ header {
     letter-spacing: 2px;
 }
 
+.loader img {
+    max-width: 100%;
+}
+
 @media (max-width: 768px) {
     .main-title { font-size: 1.8rem; }
 }
