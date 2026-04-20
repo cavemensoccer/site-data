@@ -63,15 +63,16 @@
             <span></span><span></span><span></span>
         </button>
         <div class="logo-group">
-            <img src="./_assets/media/743114cb73f024a44c543e53d752d24d.png" alt="American Fork Soccer Logo" class="main-logo">
+            <img src="./_assets/media/743114cb73f024a44c543e53d752d24d.png" alt="AF Soccer Logo" class="main-logo">
             <a href="index.html" class="main-title">CAVEMEN SOCCER</a>
         </div>
-        <a href="https://www.instagram.com/cavemensoccer/" target="_blank" aria-label="Visit American Fork Boys Soccer on Instagram">
+        <a href="https://www.instagram.com/afhs.boys.soccer/" target="_blank" aria-label="Visit American Fork Boys Soccer on Instagram">
             <svg class="instagram-icon" viewBox="0 0 16 16"><path d="M8 0C5.829 0 5.556.01 4.703.048 3.85.088 3.269.222 2.76.42a3.917 3.917 0 0 0-1.417.923A3.927 3.927 0 0 0 .42 2.76C.222 3.268.087 3.85.048 4.7.01 5.555 0 5.827 0 8.001c0 2.172.01 2.444.048 3.297.04.852.174 1.433.372 1.942.205.526.478.972.923 1.417.444.445.89.719 1.416.923.51.198 1.09.333 1.942.372C5.555 15.99 5.827 16 8 16s2.444-.01 3.298-.048c.851-.04 1.434-.174 1.943-.372a3.916 3.916 0 0 0 1.416-.923c.445-.445.718-.891.923-1.417.197-.509.332-1.09.372-1.942C15.99 10.445 16 10.173 16 8s-.01-2.445-.048-3.299c-.04-.851-.175-1.433-.372-1.941a3.926 3.926 0 0 0-.923-1.417A3.911 3.911 0 0 0 13.24.42c-.51-.198-1.092-.333-1.943-.372C10.443.01 10.172 0 7.998 0h.003zm-.717 1.442h.718c2.136 0 2.389.007 3.232.046.78.035 1.204.166 1.486.275.373.145.64.319.92.599.28.28.453.546.598.92.11.281.24.705.275 1.485.039.843.047 1.096.047 3.231s-.008 2.389-.047 3.232c-.035.78-.166 1.203-.275 1.485a2.47 2.47 0 0 1-.599.919c-.28.28-.546.453-.92.598-.282.11-.705.24-1.485.276-.843.038-1.096.047-3.232.047s-2.39-.009-3.233-.047c-.78-.036-1.203-.166-1.485-.276a2.478 2.478 0 0 1-.92-.598 2.48 2.48 0 0 1-.6-.92c-.109-.281-.24-.705-.275-1.485-.038-.843-.046-1.096-.046-3.233 0-2.136.008-2.388.046-3.231.036-.78.166-1.204.276-1.486.145-.373.319-.64.599-.92.28-.28.546-.453.92-.598.282-.11.705-.24 1.485-.276.738-.034 1.024-.044 2.515-.045v.002zm4.988 1.328a.96.96 0 1 0 0 1.92.96.96 0 0 0 0-1.92zm-4.27 1.122a4.109 4.109 0 1 0 0 8.217 4.109 4.109 0 0 0 0-8.217zm0 1.441a2.668 2.668 0 1 1 0 5.336 2.668 2.668 0 0 1 0-5.336z"/></svg>
         </a>
     </header>
 
     <nav class="side-menu" id="side-menu">
+        <a href="index.html">Home</a>
         <a href="schedule.html">Schedule</a>
         <a href="roster.html">Roster</a>
         <a href="coaching.html">Coaching</a>
@@ -85,20 +86,24 @@
 
         <div class="controls-row">
             <div class="year-select-container">
-                <label for="filter-select">Filter</label>
-                <select id="filter-select" onchange="handleFilterChange()">
+                <label for="class-filter-select">Filter</label>
+                <select id="class-filter-select" onchange="handleClassFilterChange()">
                     <option value="all">All</option>
-                    <option value="seniors">Seniors</option>
-                    <option value="juniors">Juniors</option>
-                    <option value="sophomores">Sophomores</option>
-                    <option value="freshman">Freshman</option>
+                    <option value="senior">Seniors</option>
+                    <option value="junior">Juniors</option>
+                    <option value="sophomore">Sophomores</option>
+                    <option value="freshman">Freshmen</option>
                     <option value="staff">Staff</option>
                 </select>
             </div>
-            <div class="year-select-container" style="margin-left: auto;">
+            <div class="year-select-container">
                 <label for="year-select">Year</label>
                 <select id="year-select" onchange="handleYearChange()"></select>
             </div>
+        </div>
+
+        <div id="team-photo-container" style="display:none; text-align:center; margin-bottom:30px;">
+            <img id="team-photo" src="" alt="Team Photo" style="max-width:100%; border-radius:4px; box-shadow:0 4px 20px rgba(0,0,0,0.5);">
         </div>
 
         <div id="roster-output">
@@ -123,26 +128,19 @@
 
         let currentTeam = 'all';
         let currentYear = '';
-        let currentFilter = 'all';
-        let allPlayers = [];
+        let currentClassFilter = 'all';
         let metaData = { 'all': null };
 
-        const parseCSVLine = (line) => {
-            const result = [];
-            let current = "";
-            let inQuotes = false;
-            for (let i = 0; i < line.length; i++) {
-                const char = line[i];
-                if (char === '"' && line[i+1] === '"') { current += '"'; i++; }
-                else if (char === '"') { inQuotes = !inQuotes; }
-                else if (char === ',' && !inQuotes) { result.push(current.trim()); current = ""; }
-                else { current += char; }
-            }
-            result.push(current.trim());
-            return result;
-        };
+        const isStaff = pClass => /coach/i.test(pClass);
 
-        const getRandomSlogan = () => SLOGANS[Math.floor(Math.random() * SLOGANS.length)];
+        const TEAM_PHOTOS = {
+            '2026': {
+                'all':       '1rQhW6FHD1ntXOKV4Hjefo62dsUTTTBpX',
+                'sophomore': '1N9-N9PDCjm1xhf7Wuxv7ccWSubUthhXO',
+                'junior':    '1SfMwL7bCxFGkCoh7rV5TuNdbU1kZ5nXU',
+                'freshman':  '1sCSVLqPCQMsbCTbFabzpy8bgsyNK2LBn',
+            },
+        };
 
         async function loadMeta(teamId) {
             try {
@@ -174,54 +172,6 @@
             select.value = currentYear;
         }
 
-        function matchesFilter(player, filter) {
-            const c = (player.pClass || '').toLowerCase();
-            switch (filter) {
-                case 'seniors':    return /^sr\.?$|senior/.test(c);
-                case 'juniors':    return /^jr\.?$|junior/.test(c);
-                case 'sophomores': return /^so\.?$|soph|sophomore/.test(c);
-                case 'freshman':   return /^fr\.?$|fresh|freshman/.test(c);
-                case 'staff':      return c.includes('coach');
-                default:           return true;
-            }
-        }
-
-        function renderPlayers(players) {
-            const output = document.getElementById('roster-output');
-            const filtered = players.filter(p => matchesFilter(p, currentFilter));
-            if (!filtered.length) {
-                output.innerHTML = "<p>No players found.</p>";
-                return;
-            }
-            let html = "";
-            filtered.forEach(p => {
-                // Append =s1000 to the ID to tell Google to serve a web-optimized
-                // version resized to 1000px on the longest side.
-                const imgSrc = p.photoId
-                    ? `https://lh3.googleusercontent.com/d/${p.photoId}=s1000`
-                    : "";
-
-                const isStaff = (p.pClass || '').toLowerCase().includes('coach');
-                const details = [
-                    isStaff     ? `<div class="player-detail"><span>${p.pClass}</span></div>` : '',
-                    p.pClass && !isStaff ? `<div class="player-detail">Class: <span>${p.pClass}</span></div>` : '',
-                    p.position  ? `<div class="player-detail">Position: <span>${p.position}</span></div>` : '',
-                    p.club      ? `<div class="player-detail">Club: <span>${p.club}</span></div>` : '',
-                ].join('');
-
-                html += `
-                    <div class="player-card">
-                        <img src="${imgSrc}" alt="${p.name}" class="player-image" onerror="this.style.opacity='0'">
-                        <div class="player-name-row">
-                            ${p.number ? `<span class="player-number">#${p.number}</span> ` : ''}${p.name}
-                        </div>
-                        ${details}
-                    </div>
-                `;
-            });
-            output.innerHTML = html;
-        }
-
         async function fetchRoster() {
             const output = document.getElementById('roster-output');
             const title = document.getElementById('page-title');
@@ -231,15 +181,15 @@
             }
             title.textContent = `${currentYear} Roster`;
             output.innerHTML = `<div class="loader">${getRandomSlogan()}</div>`;
-
+            
             try {
                 const gid = metaData[currentTeam][currentYear];
                 const response = await fetch(`${BASES[currentTeam]}&gid=${gid}`);
                 const csvText = await response.text();
                 const rows = csvText.split('\n').filter(r => r.trim().length > 0).slice(1); // Skip header
 
-                // Map rows to objects and sort by jersey number (staff with no number sorts last)
-                allPlayers = rows.map(line => {
+                // Map rows to objects and sort by number, staff last
+                let players = rows.map(line => {
                     const cols = parseCSVLine(line);
                     return {
                         number: cols[0],
@@ -252,12 +202,52 @@
                 })
                 .filter(p => p.name)
                 .sort((a, b) => {
+                    const aStaff = isStaff(a.pClass), bStaff = isStaff(b.pClass);
+                    if (aStaff !== bStaff) return aStaff ? 1 : -1;
                     const aNum = parseInt(a.number);
                     const bNum = parseInt(b.number);
                     return (isNaN(aNum) ? Infinity : aNum) - (isNaN(bNum) ? Infinity : bNum);
                 });
 
-                renderPlayers(allPlayers);
+                if (currentClassFilter !== 'all') {
+                    players = players.filter(p => {
+                        if (currentClassFilter === 'staff') return isStaff(p.pClass);
+                        return p.pClass.toLowerCase().startsWith(currentClassFilter);
+                    });
+                }
+
+                const teamPhotoContainer = document.getElementById('team-photo-container');
+                const teamPhotoImg = document.getElementById('team-photo');
+                const teamPhotoId = TEAM_PHOTOS[currentYear]?.[currentClassFilter];
+                if (teamPhotoId) {
+                    teamPhotoImg.src = `https://lh3.googleusercontent.com/d/${teamPhotoId}=s1600`;
+                    teamPhotoContainer.style.display = 'block';
+                } else {
+                    teamPhotoContainer.style.display = 'none';
+                }
+
+                let html = "";
+                players.forEach(p => {
+                    const imgSrc = p.photoId
+                        ? `https://lh3.googleusercontent.com/d/${p.photoId}=s1000`
+                        : "";
+                    const detailRows = isStaff(p.pClass)
+                        ? `<div class="player-detail"><span>${p.pClass}</span></div>`
+                        : `<div class="player-detail">Class: <span>${p.pClass}</span></div>
+                            <div class="player-detail">Position: <span>${p.position}</span></div>
+                            <div class="player-detail">Club: <span>${p.club}</span></div>`;
+
+                    html += `
+                        <div class="player-card">
+                            <img src="${imgSrc}" alt="${p.name}" class="player-image" onerror="this.style.opacity='0'">
+                            <div class="player-name-row">
+                                ${p.number ? `<span class="player-number">#${p.number}</span> ` : ''}${p.name}
+                            </div>
+                            ${detailRows}
+                        </div>
+                    `;
+                });
+                output.innerHTML = html || "<p>No players found.</p>";
             } catch (error) {
                 output.innerHTML = `<div style="text-align:center; padding: 40px; background: #111; border-radius: 4px;">⚠️ Could not load the roster. Please refresh the page to try again.</div>`;
             }
@@ -268,9 +258,9 @@
             fetchRoster();
         }
 
-        function handleFilterChange() {
-            currentFilter = document.getElementById('filter-select').value;
-            renderPlayers(allPlayers);
+        function handleClassFilterChange() {
+            currentClassFilter = document.getElementById('class-filter-select').value;
+            fetchRoster();
         }
 
         (async () => {
