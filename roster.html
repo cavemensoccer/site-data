@@ -129,6 +129,8 @@
         let currentYear = '';
         let currentClassFilter = 'all';
         let metaData = { 'all': null };
+        let cachedPlayers = null;
+        let cachedYear = null;
 
         const isStaff = pClass => /coach/i.test(pClass);
 
@@ -179,38 +181,41 @@
                 return;
             }
             title.textContent = `${currentYear} Roster`;
-            output.innerHTML = `<div class="loader"><img src="./_assets/media/cavemenloading.gif" alt="Loading..."></div>`;
-            
+
             try {
-                const gid = metaData[currentTeam][currentYear];
-                const [response] = await Promise.all([
-                    fetch(`${BASES[currentTeam]}&gid=${gid}`),
-                    new Promise(r => setTimeout(r, 640))
-                ]);
-                const csvText = await response.text();
-                const rows = csvText.split('\n').filter(r => r.trim().length > 0).slice(1); // Skip header
+                if (cachedYear !== currentYear) {
+                    output.innerHTML = `<div class="loader"><img src="./_assets/media/cavemenloading.gif" alt="Loading..."></div>`;
+                    const gid = metaData[currentTeam][currentYear];
+                    const [response] = await Promise.all([
+                        fetch(`${BASES[currentTeam]}&gid=${gid}`),
+                        new Promise(r => setTimeout(r, 640))
+                    ]);
+                    const csvText = await response.text();
+                    const rows = csvText.split('\n').filter(r => r.trim().length > 0).slice(1);
 
-                // Map rows to objects and sort by number, staff last
-                let players = rows.map(line => {
-                    const cols = parseCSVLine(line);
-                    return {
-                        number: cols[0],
-                        name: cols[1],
-                        pClass: cols[2],
-                        position: cols[3],
-                        club: cols[4],
-                        photoId: cols[5]
-                    };
-                })
-                .filter(p => p.name)
-                .sort((a, b) => {
-                    const aStaff = isStaff(a.pClass), bStaff = isStaff(b.pClass);
-                    if (aStaff !== bStaff) return aStaff ? 1 : -1;
-                    const aNum = parseInt(a.number);
-                    const bNum = parseInt(b.number);
-                    return (isNaN(aNum) ? Infinity : aNum) - (isNaN(bNum) ? Infinity : bNum);
-                });
+                    cachedPlayers = rows.map(line => {
+                        const cols = parseCSVLine(line);
+                        return {
+                            number: cols[0],
+                            name: cols[1],
+                            pClass: cols[2],
+                            position: cols[3],
+                            club: cols[4],
+                            photoId: cols[5]
+                        };
+                    })
+                    .filter(p => p.name)
+                    .sort((a, b) => {
+                        const aStaff = isStaff(a.pClass), bStaff = isStaff(b.pClass);
+                        if (aStaff !== bStaff) return aStaff ? 1 : -1;
+                        const aNum = parseInt(a.number);
+                        const bNum = parseInt(b.number);
+                        return (isNaN(aNum) ? Infinity : aNum) - (isNaN(bNum) ? Infinity : bNum);
+                    });
+                    cachedYear = currentYear;
+                }
 
+                let players = cachedPlayers;
                 if (currentClassFilter !== 'all') {
                     players = players.filter(p => {
                         if (currentClassFilter === 'staff') return isStaff(p.pClass);
