@@ -14,24 +14,9 @@ window.SOCCER_CONFIG = {
         'fresh-soph': "1805648060"
     },
     DOC_URLS: {
-        'coaching-from-sideline': "https://docs.google.com/document/d/e/2PACX-1vRiyHoWWXt_b3FOMsFqLsDXwwexBRkyd-LfgK0VdqlmllPJUPoGuufB2F91bSmS0g/pub",
+        'coaching-from-sideline': "https://docs.google.com/document/d/e/2PACX-1vRiyHoWWXt_b3FOMsFqLsDXwwexBRkyd-LfgK0VdqlmllPJUPoGuufB2F91bSmS0g/pubs",
         'pay-team-fees': "https://docs.google.com/document/d/e/2PACX-1vRQ1zcjbnlY0D5216xnT2kl8CEHGlMQY3_npI0uWVj5CM1GSt1vqxsD0a2Prcq5Hg/pub"
-    },
-    SLOGANS: [
-        "P.R.O.U.D. to be a Caveman!",
-        "2024 State Champions!",
-        "2025 State Champions!",
-        "Back2Back State Champions!",
-        "The Energy Bus!"
-    ]
-};
-
-/**
- * Shared utility to select a random team slogan.
- */
-window.getRandomSlogan = function() {
-    const slogans = window.SOCCER_CONFIG.SLOGANS;
-    return slogans[Math.floor(Math.random() * slogans.length)];
+    }
 };
 
 /**
